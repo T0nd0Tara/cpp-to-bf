@@ -1,3 +1,4 @@
 main
 brainfuck_debugger
+*.bf
 magic_enum.hpp
