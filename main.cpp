@@ -39,7 +39,7 @@ enum class InstType : size_t{
     NOP,
     GOTO,
     PRINT,
-    ADD,
+    ADD, SUB,
     CLEAR,
 };
 
@@ -120,10 +120,15 @@ std::deque<Inst> preprocess(const std::deque<Token>& dTok){
                 size_t nCurrInd = state.currInd();
                 out.push_back(Inst(InstType::GOTO, nGOTO));
                 for (char& c: sPrint){
-                    out.push_back(Inst(InstType::ADD, c));
+                    // uint8_t c = (uint8_t)cc;
+                    uint8_t currVal = state.mem_pos->first;
+                    if (c > currVal)      out.push_back(Inst(InstType::ADD, uint8_t(c - currVal)));
+                    else if (currVal > c) out.push_back(Inst(InstType::SUB, uint8_t(currVal - c)));
+                    state.mem_pos->first = c;
                     out.push_back(Inst(InstType::PRINT));
-                    out.push_back(Inst(InstType::CLEAR));
                 }
+                state.mem_pos->first = 0;
+                out.push_back(Inst(InstType::CLEAR));
                 out.push_back(Inst(InstType::GOTO, nCurrInd));
             }
             break;
@@ -168,12 +173,23 @@ void evalInst(const std::deque<Inst>& dInst){
             break;
         case InstType::ADD:
             {
-               char c = handled_any_cast<char>(inst.val);
-                for (int i=0; i<c; i++)
+                uint8_t c = handled_any_cast<uint8_t>(inst.val);
+                for (uint8_t i=0; i<c; i++)
                     std::cout << "+";
-            }break;
+                state.mem_pos->first += c;
+            }
+            break;
+        case InstType::SUB:
+            {
+                uint8_t c = handled_any_cast<uint8_t>(inst.val);
+                for (uint8_t i=0; i<c; i++)
+                    std::cout << "-";
+                state.mem_pos->first -= c;
+            }
+            break;
         case InstType::CLEAR:
-            std::cout << "[-]";
+            if (state.mem_pos->first < 128) std::cout << "[-]";
+            else std::cout << "[+]";
             break;
         }
     } 
